@@ -1,0 +1,56 @@
+pipeline {
+    agent { label 'agent-node' }
+
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Docker Image Tag to Test')
+    }
+
+    environment {
+        IMAGE_NAME = "cicd-webapp"
+        CONTAINER_NAME = "test-container"
+    }
+
+    stages {
+        stage('Run Test Container') {
+            steps {
+                script {
+                    sh """
+                        sudo docker run -d --name ${CONTAINER_NAME} ${IMAGE_NAME}:${IMAGE_TAG}
+                        sleep 5
+                    """
+                }
+            }
+        }
+
+        stage('Smoke Test') {
+            steps {
+                script {
+                    def result = sh(
+                        script: "sudo docker exec ${CONTAINER_NAME} curl -s http://localhost",
+                        returnStatus: true
+                    )
+                    if (result != 0) {
+                        error("App did not respond correctly.")
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh "sudo docker rm -f ${CONTAINER_NAME} || true"
+            }
+        }
+
+        stage('Trigger Prod Job') {
+            steps {
+                script {
+                    build job: 'Prod_Job',
+                        parameters: [
+                            string(name: 'IMAGE_TAG', value: IMAGE_TAG)
+                        ]
+                }
+            }
+        }
+    }
+}
