@@ -1,0 +1,31 @@
+pipeline {
+    agent { label 'agent-node' }
+
+    environment {
+        IMAGE_NAME = "cicd-webapp"
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Juhika14/CICD_pipeline.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def IMAGE_TAG = "build-${env.BUILD_ID}"
+                    sh "sudo docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+
+                    // Trigger Test Job with IMAGE_TAG
+                    build job: 'Test_Job',
+                        parameters: [
+                            string(name: 'IMAGE_TAG', value: IMAGE_TAG)
+                        ],
+                        propagate: true
+                }
+            }
+        }
+    }
+}
