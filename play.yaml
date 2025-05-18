@@ -1,0 +1,14 @@
+---
+- name: Installing Jenkins, Java, and Docker on master node (localhost)
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Execute installation script for Jenkins, Java, and Docker (1.sh)
+      script: 1.sh
+
+- name: Installing Docker and Java on agent node
+  hosts: agent-node
+  become: true
+  tasks:
+    - name: Execute installation script for Docker and Java (2.sh)
+      script: 2.sh
